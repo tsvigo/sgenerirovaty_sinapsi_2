@@ -78,7 +78,8 @@ int main(int argc, char *argv[])
 
     // Генерация случайных чисел
     generateRandomNumbers(list_of_synapses);
-
+    // Вывод размера вектора list_of_synapses
+    qDebug() << "Размер list_of_synapses:" << list_of_synapses.size();
     // Запись чисел в бинарный файл
     writeToFile(list_of_synapses, FILE_PATH);
 
