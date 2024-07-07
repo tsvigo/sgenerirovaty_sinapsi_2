@@ -13,11 +13,11 @@
 #include <gmpxx.h>
 #include <fstream>
 #include <random>
-
+#include <QFile>
 constexpr size_t NUM_SYNAPSES = 10105;
 const mpz_class MAX_VALUE("18446744073709551615");
 const std::string FILE_PATH = "/home/viktor/my_projects_qt_2/sgenerirovaty_sinapsi/random_sinapsi.bin";
-
+QString filePath = "/home/viktor/my_projects_qt_2/sgenerirovaty_sinapsi/random_sinapsi.bin";
 void generateRandomNumbers(std::vector<mpz_class>& list_of_synapses) {
     std::random_device rd;
     std::mt19937_64 gen(rd());
@@ -27,7 +27,7 @@ void generateRandomNumbers(std::vector<mpz_class>& list_of_synapses) {
         list_of_synapses[i] = dis(gen);
     }
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void writeToFile(const std::vector<mpz_class>& list_of_synapses, const std::string& filePath) {
     std::ofstream outFile(filePath, std::ios::binary);
     if (!outFile) {
@@ -44,7 +44,42 @@ void writeToFile(const std::vector<mpz_class>& list_of_synapses, const std::stri
 
     outFile.close();
 }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void writeVectorToFile2(const std::vector<mpz_class>& vec, const QString& filePath) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        qCritical() << "Cannot open file for writing:" << file.errorString();
+        return;
+    }
 
+    QDataStream out(&file);
+    out.setVersion(QDataStream::Qt_5_15);
+
+    // Записываем размер вектора
+    out << static_cast<quint32>(vec.size());
+
+    for (const auto& number : vec) {
+        // Получаем размер числа в байтах
+        size_t size = (mpz_sizeinbase(number.get_mpz_t(), 2) + 7) / 8;
+
+        // Выделяем буфер для хранения числа
+        std::vector<unsigned char> buffer(size);
+
+        // Записываем число в буфер
+        mpz_export(buffer.data(), &size, 1, 1, 0, 0, number.get_mpz_t());
+
+        // Записываем размер числа и само число
+        out << static_cast<quint32>(size);
+        out.writeRawData(reinterpret_cast<const char*>(buffer.data()), size);
+
+        // Отладочная информация
+        //   qDebug() << "Записан элемент с размером:" << size;
+    }
+
+    file.close();
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void readFromFile(std::vector<mpz_class>& list_of_synapses, const std::string& filePath) {
     std::ifstream inFile(filePath, std::ios::binary);
     if (!inFile) {
@@ -62,13 +97,13 @@ void readFromFile(std::vector<mpz_class>& list_of_synapses, const std::string& f
 
     inFile.close();
 }
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void printVector(const std::vector<mpz_class>& list_of_synapses) {
     for (const auto& value : list_of_synapses) {
         qDebug() << QString::fromStdString(value.get_str());
     }
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -82,7 +117,7 @@ int main(int argc, char *argv[])
     qDebug() << "Размер list_of_synapses:" << list_of_synapses.size();
     // Запись чисел в бинарный файл
     writeToFile(list_of_synapses, FILE_PATH);
-
+//writeVectorToFile2(list_of_synapses, filePath);
     // Чтение чисел из бинарного файла
     std::vector<mpz_class> read_synapses(NUM_SYNAPSES);
     readFromFile(read_synapses, FILE_PATH);
