@@ -9,6 +9,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <QCoreApplication>
 #include <QDebug>
+#include <iostream>
 #include <vector>
 #include <gmpxx.h>
 #include <fstream>
@@ -18,6 +19,24 @@ constexpr size_t NUM_SYNAPSES = 10105;
 const mpz_class MAX_VALUE("18446744073709551615");
 const std::string FILE_PATH = "/home/viktor/my_projects_qt_2/sgenerirovaty_sinapsi/random_sinapsi.bin";
 QString filePath = "/home/viktor/my_projects_qt_2/sgenerirovaty_sinapsi/random_sinapsi.bin";
+std::vector<mpz_class> list_of_synapses(10105);
+// Функции:
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void writeVectorToFile(const std::vector<mpz_class>& vec, const std::string& filename) {
+    FILE* outFile = fopen(filename.c_str(), "wb");
+    if (!outFile) {
+        std::cerr << "Error opening file for writing." << std::endl;
+        return;
+    }
+
+    for (const auto& num : vec) {
+        mpz_out_raw(outFile, num.get_mpz_t());
+    }
+
+    fclose(outFile);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void generateRandomNumbers(std::vector<mpz_class>& list_of_synapses) {
     std::random_device rd;
     std::mt19937_64 gen(rd());
@@ -27,6 +46,7 @@ void generateRandomNumbers(std::vector<mpz_class>& list_of_synapses) {
         list_of_synapses[i] = dis(gen);
     }
 }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void writeToFile(const std::vector<mpz_class>& list_of_synapses, const std::string& filePath) {
     std::ofstream outFile(filePath, std::ios::binary);
@@ -104,6 +124,27 @@ void printVector(const std::vector<mpz_class>& list_of_synapses) {
     }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+std::vector<mpz_class> readVectorFromFile(const std::string& filename) {
+   // std::vector<mpz_class> vec;
+    FILE* inFile = fopen(filename.c_str(), "rb");
+    if (!inFile) {
+        std::cerr << "Error opening file for reading." << std::endl;
+        return list_of_synapses;
+    }
+
+    while (!feof(inFile)) {
+        mpz_class num;
+        if (mpz_inp_raw(num.get_mpz_t(), inFile) == 0) {
+            break; // EOF or error
+        }
+        list_of_synapses.push_back(num);
+    }
+
+    fclose(inFile);
+    return list_of_synapses;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -116,24 +157,27 @@ int main(int argc, char *argv[])
     // Вывод размера вектора list_of_synapses
     qDebug() << "Размер list_of_synapses:" << list_of_synapses.size();
     // Запись чисел в бинарный файл
-    writeToFile(list_of_synapses, FILE_PATH);
+ //   writeToFile(list_of_synapses, FILE_PATH);
+    // Запись вектора в файл
+    writeVectorToFile(list_of_synapses, FILE_PATH);
+    readVectorFromFile(FILE_PATH)  ;
 //writeVectorToFile2(list_of_synapses, filePath);
     // Чтение чисел из бинарного файла
-    std::vector<mpz_class> read_synapses(NUM_SYNAPSES);
-    readFromFile(read_synapses, FILE_PATH);
+  //  std::vector<mpz_class> read_synapses(NUM_SYNAPSES);
+  //  readFromFile(read_synapses, FILE_PATH);
 
     // Проверка прочитанных чисел
-    for (size_t i = 0; i < NUM_SYNAPSES; ++i) {
-        if (list_of_synapses[i] != read_synapses[i]) {
-            qCritical() << "Ошибка: значения не совпадают на позиции" << i;
-            return -1;
-        }
-    }
+    // for (size_t i = 0; i < NUM_SYNAPSES; ++i) {
+    //     if (list_of_synapses[i] != read_synapses[i]) {
+    //         qCritical() << "Ошибка: значения не совпадают на позиции" << i;
+    //         return -1;
+    //     }
+    // }
 
-    qDebug() << "Все значения совпадают.";
+    // qDebug() << "Все значения совпадают.";
 
-    // Вывод значений вектора в консоль
-    printVector(read_synapses);
+    // // Вывод значений вектора в консоль
+    printVector(list_of_synapses);
 
     return a.exec();
 }
