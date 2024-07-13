@@ -15,6 +15,11 @@
 #include <fstream>
 #include <random>
 #include <QFile>
+
+
+#include <QTextStream>
+#include <QDateTime>
+
 constexpr size_t NUM_SYNAPSES = 10105;
 const mpz_class MAX_VALUE("18446744073709551615");
 const std::string FILE_PATH = "/home/viktor/my_projects_qt_2/sgenerirovaty_sinapsi/random_sinapsi.bin";
@@ -22,14 +27,44 @@ QString filePath = "/home/viktor/my_projects_qt_2/sgenerirovaty_sinapsi/random_s
 std::vector<mpz_class> list_of_synapses(10105);
 // Функции:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void writeVectorToFile(const std::vector<mpz_class>& vec, const std::string& filename) {
+void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+    static QFile logFile("/home/viktor/my_projects_qt_2/sgenerirovaty_sinapsi/application.log");
+    if (!logFile.isOpen()) {
+        logFile.open(QIODevice::Append | QIODevice::Text);
+    }
+    QTextStream out(&logFile);
+    QString timeStamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz");
+
+    switch (type) {
+    case QtDebugMsg:
+        out << timeStamp << " [DEBUG] " << msg << "\n";
+        break;
+    case QtInfoMsg:
+        out << timeStamp << " [INFO] " << msg << "\n";
+        break;
+    case QtWarningMsg:
+        out << timeStamp << " [WARNING] " << msg << "\n";
+        break;
+    case QtCriticalMsg:
+        out << timeStamp << " [CRITICAL] " << msg << "\n";
+        break;
+    case QtFatalMsg:
+        out << timeStamp << " [FATAL] " << msg << "\n";
+        abort();
+    }
+    out.flush();
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void writeVectorToFile(const std::vector<mpz_class>& list_of_synapses//vec
+                       , const std::string& filename) {
     FILE* outFile = fopen(filename.c_str(), "wb");
     if (!outFile) {
         std::cerr << "Error opening file for writing." << std::endl;
         return;
     }
 
-    for (const auto& num : vec) {
+    for (const auto& num : list_of_synapses//vec
+         ) {
         mpz_out_raw(outFile, num.get_mpz_t());
     }
 
@@ -119,8 +154,10 @@ void readFromFile(std::vector<mpz_class>& list_of_synapses, const std::string& f
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void printVector(const std::vector<mpz_class>& list_of_synapses) {
+    int x=0;
     for (const auto& value : list_of_synapses) {
-        qDebug() << QString::fromStdString(value.get_str());
+        qDebug() <<x<<": "<< QString::fromStdString(value.get_str());
+        x++;
     }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,8 +186,10 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
+    // Регистрация пользовательского обработчика сообщений
+    qInstallMessageHandler(customMessageHandler);
     // Создание вектора для хранения случайных чисел
-    std::vector<mpz_class> list_of_synapses(NUM_SYNAPSES);
+ //   std::vector<mpz_class> list_of_synapses(NUM_SYNAPSES);
 
     // Генерация случайных чисел
     generateRandomNumbers(list_of_synapses);
@@ -160,7 +199,7 @@ int main(int argc, char *argv[])
  //   writeToFile(list_of_synapses, FILE_PATH);
     // Запись вектора в файл
     writeVectorToFile(list_of_synapses, FILE_PATH);
-    readVectorFromFile(FILE_PATH)  ;
+//    readVectorFromFile(FILE_PATH)  ;
 //writeVectorToFile2(list_of_synapses, filePath);
     // Чтение чисел из бинарного файла
   //  std::vector<mpz_class> read_synapses(NUM_SYNAPSES);
